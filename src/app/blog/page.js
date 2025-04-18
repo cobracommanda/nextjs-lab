@@ -15,6 +15,7 @@ export default async function BlogPage() {
 
   return (
     <main>
+      <h1>Jungle Juice</h1>
       {items &&
         items.map((item, idx) => {
           return <li key={`post-${idx}`}>{item.title}</li>;
