@@ -3,30 +3,40 @@ import getDomain from "../lib/getDomain";
 async function getData() {
   const domain = getDomain();
   const endpoint = `${domain}/api/post`;
-  const res = await fetch(endpoint, { cache: "no-store" });
 
+  // quick sanity check
+  console.log("⟢ fetching from:", endpoint);
+
+  const res = await fetch(endpoint, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error("Failed to fetch data");
+    // log status + body to see what went wrong on the API side
+    const text = await res.text().catch(() => "");
+    console.error(`Fetch error ${res.status}: ${text}`);
+    throw new Error(`Failed to fetch data (${res.status})`);
   }
 
-  if (!res.headers.get("content-type") !== "application/json") {
+  // correctly guard against non‑JSON payloads
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    console.warn("Unexpected content-type:", contentType);
     return { items: [] };
   }
-  return res.json();
-  // return { items: [] };
+
+  const data = await res.json();
+  return data;
 }
 
 export default async function BlogPage() {
   const data = await getData();
-  const items = data && data.items ? [...data.items] : [];
-  console.log(process.env.PUBLIC_DOMAIN);
+  const items = Array.isArray(data.items) ? data.items : [];
   return (
     <main>
       <h1>Jungle Juice</h1>
-      {items &&
-        items.map((item, idx) => {
-          return <li key={`post-${idx}`}>{item.title}</li>;
-        })}
+      <ul>
+        {items.map((item, idx) => (
+          <li key={`post-${idx}`}>{item.title}</li>
+        ))}
+      </ul>
     </main>
   );
 }
